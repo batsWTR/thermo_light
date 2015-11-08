@@ -1,0 +1,1 @@
+Thermo Light is a project based on an Arduino nano,some WS2812B leds, a BMP180 temp sensor, an RTC and a tiny oled screen powered by USB. It allows to show by light the temperature of a room. It also displays time and temperature on the oled screen.
