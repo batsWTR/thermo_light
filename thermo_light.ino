@@ -1,17 +1,19 @@
 // Thermo light
-// systeme de notification de la temperature en couleur
-// sonde temp BMP180
+// Temperature notification by lights
+// BMP180 temp
 // led WS2812b
+// Oled 0.96 screen
+// RTC
 
-// bleu = froid
-// rouge = chaud
+// blue = cold 16 deg C
+// red = hot 24 deg C
 
-// septembre 2015
+// september 2015
 // b. Wentzler
 
 //----------------------------INCLUDES-----------------------------
-#include <Wire.h>  // communication i2c
-#include <Adafruit_NeoPixel.h>  // include  pour les leds
+#include <Wire.h>  // i2c communication
+#include <Adafruit_NeoPixel.h>  // to control WS2812b
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>  //OLED display
@@ -21,9 +23,9 @@
 
 //---------------------------DEFINE--------------------------------
 
-// BMP180
-#define BMP_ADRESS 0x77  // adresse du module bmp180 1110111
-#define AC6 0xB4  // adresse  MSB pour le calcul temp
+// BMP180 (doc bosh BMP180.pdf)
+#define BMP_ADRESS 0x77  // module address bmp180 1110111
+#define AC6 0xB4  // adresse  MSB for temp calculation
 #define AC5 0xB2
 #define MC 0xBC
 #define MD 0xBE
@@ -42,7 +44,7 @@
 
 
 //----------------------------VAR-------------------------------------
-// var de l eprom pour la mesure de temperature
+// var  BMP180 eeprom
 long ac6,ac5,mc,md;
 
 
@@ -53,18 +55,22 @@ unsigned char msb, lsb;
 
 
 //---------------------------PROTOTYPES--------------------------
-// Fonction BMP 180
+// Function BMP 180
+// get calibration datas from BMP180 eeprom
 void bmp180_cal(long *, long *, long *, long *);
+// get raw temp dats from BMP180
 long bmp180_UT();
 
 
-//  Affichage de la couleur en fonction de la temp
+//  set WS2812b color according temp ex 18.25
 void setColor(float temp);
 
 
-
+// Set WS2812b and oled screen
 Adafruit_NeoPixel b_led = Adafruit_NeoPixel(NUM_LED,DATA_PIN,NEO_GRB + NEO_KHZ800);
 Adafruit_SSD1306 oled = Adafruit_SSD1306(OLED_SDA,OLED_SCL,OLED_DC,OLED_RST,7);
+
+// *********************************************************************
 
 void setup()
 {
@@ -76,22 +82,17 @@ void setup()
   b_led.begin();
   
   
-  
-  // fonction permettant de recuperer les infos de calibration
+  // get calibration datas from BMP180
   bmp180_cal(&ac6,&ac5,&mc,&md);
-  
-  
-
-
   
 }
 
-
+//******************************************************************
 
 void loop()
 {
   
-  //  fonction de recuperation de la donnee brute
+  // get raw temp dats from BMP180
   ut = bmp180_UT();
   
   
@@ -101,7 +102,7 @@ void loop()
   long b5 = x1 + x2;
   temp2 = (b5 + 8) / pow(2,4);
   
-  // AH ah la temp est a diviser par 10
+  // AH ah must divide temp per 10
   temp2 = temp2 / 10;
   
   
@@ -110,12 +111,12 @@ void loop()
   Serial.println(temp2,2);
   //Serial.println("deg C");
   
-  // calcul de la couleur des leds
+  //  set WS2812b color according temp ex 18.25
   setColor(temp2);
   
 
   
-  //  affichage de la temp sur l ecran oled
+  // displays time and temp on Oled
   oled.clearDisplay();
   oled.setTextSize(3);
   //oled.setTextColor(WHITE);
@@ -128,19 +129,16 @@ void loop()
   oled.display();
   
   delay(1000);
-  
-  
-  
-  
+   
   
 
 }
+//********************************************************************************
 
-
-
+// get calibration datas from BMP180 eeprom
 void bmp180_cal(long *ac6=0, long *ac5=0, long *mc=0, long *md=0)
 {
-    // recuperation des donnees de calibration en eprom
+
     
     // AC6
   Wire.beginTransmission(BMP_ADRESS);
@@ -186,11 +184,13 @@ void bmp180_cal(long *ac6=0, long *ac5=0, long *mc=0, long *md=0)
   
 }
 
+//**********************************************************************
+// get raw temp dats from BMP180
 long bmp180_UT()
 {
   
   long temp = 0;
-    // demarre la transmission avec l adresse du BMP180 en ecriture
+    // begin transmission with write address of BMP180
   Wire.beginTransmission(BMP_ADRESS);
   //envoie de l adresse du registre a ecrire
   Wire.write(0xF4);
@@ -202,7 +202,7 @@ long bmp180_UT()
   delay(5);
   
   
-  // lecture temperature
+  // read temperature
   
   // adresse du BMP180 en lecture
   Wire.beginTransmission(BMP_ADRESS);
@@ -212,9 +212,9 @@ long bmp180_UT()
   Wire.endTransmission();
   
   
-  // on attend 2 bytes
+  // 2 bytes request
   Wire.requestFrom(BMP_ADRESS, 2);
-  // en attente des 2 bytes
+  // waiting for 2 bytes
   while(Wire.available()<2);;
   msb = Wire.read();
   lsb = Wire.read();
@@ -223,8 +223,9 @@ long bmp180_UT()
   
 }
 
+//***********************************************************************
 
-// couleur en fonction de la temp
+//  set WS2812b color according temp ex 18.25
 void setColor(float temp)
 {
   int r = 128,g = 0,b = 0;
@@ -237,7 +238,7 @@ void setColor(float temp)
   var = (int) temp;
   
   
- // test des cas
+ // case tests
  if(var < 160){
    // blink blue
    if(on){
@@ -312,7 +313,7 @@ void setColor(float temp)
  
  
  
- 
+   // send RGB values to each leds
    for(int i=0;i<NUM_LED;i++)
   {
     b_led.setPixelColor(i,b_led.Color(r,g,b));
@@ -321,7 +322,7 @@ void setColor(float temp)
   
 }
 
-
+//**************************************************************************
 
 
 
