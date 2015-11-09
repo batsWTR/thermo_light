@@ -60,6 +60,8 @@ unsigned char msb, lsb;
 void bmp180_cal(long *, long *, long *, long *);
 // get raw temp dats from BMP180
 long bmp180_UT();
+// temperature calculation
+float calcTemp();
 
 
 //  set WS2812b color according temp ex 18.25
@@ -97,13 +99,7 @@ void loop()
   
   
   // calc temp
-  long x1 = (ut-ac6) * (ac5 / pow(2,15));
-  long x2 = mc * pow(2,11) / (x1 + md);
-  long b5 = x1 + x2;
-  temp2 = (b5 + 8) / pow(2,4);
-  
-  // AH ah must divide temp per 10
-  temp2 = temp2 / 10;
+  temp2 = calcTemp();
   
   
   
@@ -224,6 +220,20 @@ long bmp180_UT()
 }
 
 //***********************************************************************
+
+// temperature calculation
+float calcTemp(){
+  long x1 = (ut-ac6) * (ac5 / pow(2,15));
+  long x2 = mc * pow(2,11) / (x1 + md);
+  long b5 = x1 + x2;
+  float data = (b5 + 8) / pow(2,4);
+  
+  // AH ah must divide temp per 10
+  data = data / 10;
+  return data;
+}
+
+//**************************************************************************
 
 //  set WS2812b color according temp ex 18.25
 void setColor(float temp)
