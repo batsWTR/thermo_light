@@ -52,6 +52,10 @@ long temp =0, ut = 0;
 float temp2 = 0;
 unsigned char msb, lsb;
 
+// RTC
+String time = "";
+
+
 
 
 //---------------------------PROTOTYPES--------------------------
@@ -62,6 +66,9 @@ void bmp180_cal(long *, long *, long *, long *);
 long bmp180_UT();
 // temperature calculation
 float calcTemp();
+
+// get time from DS1307 and return as string
+String getTime();
 
 
 //  set WS2812b color according temp ex 18.25
@@ -97,7 +104,6 @@ void loop()
   // get raw temp dats from BMP180
   ut = bmp180_UT();
   
-  
   // calc temp
   temp2 = calcTemp();
   
@@ -110,14 +116,15 @@ void loop()
   //  set WS2812b color according temp ex 18.25
   setColor(temp2);
   
-
+  time = getTime();
   
   // displays time and temp on Oled
   oled.clearDisplay();
   oled.setTextSize(3);
   //oled.setTextColor(WHITE);
   oled.setCursor(0,0);
-  oled.print(" 00:00");
+  oled.print(" ");
+  oled.print(time);
   oled.setTextColor(WHITE);
   oled.setCursor(10,40);
   oled.print(temp2,1);
@@ -130,6 +137,62 @@ void loop()
 
 }
 //********************************************************************************
+// get time from DS1307 and return as string
+String getTime(){
+  
+  String temp = "";
+  byte sec = 0;
+  byte secRaw = 0;
+  byte secDix = 0;
+  byte minuRaw = 0;
+  byte minu = 0;
+  byte minuDix = 0;
+  byte hourRaw = 0;
+  byte hour = 0;
+  byte hourDix = 0;
+  // require register 00h
+  Wire.beginTransmission(0x68);
+  Wire.write(0);
+  Wire.endTransmission();
+  
+  // reading 3 byte sec,min,hour
+  Wire.requestFrom(0x68,3);
+  secRaw = Wire.read();
+  minuRaw = Wire.read();
+  hourRaw = Wire.read();
+  
+  // calc seconds   second method to decode BCD: (val/16*10) + (val%16)
+  sec = B00001111 & secRaw;
+  secDix = B11110000 & secRaw;
+  secDix = secDix >> 4;
+  
+  // calc minutes
+  minu = B00001111 & minuRaw;
+  minuDix = B11110000 & minuRaw;
+  minuDix = minuDix >> 4;
+  
+  // calc hours
+  hour = B00001111 & hourRaw;
+  hourDix = B11110000 & hourRaw;
+  hourDix = hourDix >> 4;
+  
+  
+  
+  temp += hourDix;
+  temp += hour;
+  temp += "h";
+  temp += minuDix;
+  temp += minu;
+  //temp += ":";
+  //temp += secDix;
+  //temp += sec;
+  return temp;
+  
+}
+
+//*************************************************************************************
+
+
 
 // get calibration datas from BMP180 eeprom
 void bmp180_cal(long *ac6=0, long *ac5=0, long *mc=0, long *md=0)
