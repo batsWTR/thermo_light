@@ -119,6 +119,16 @@ void loop()
   time = getTime();
   
   // displays time and temp on Oled
+  displayOled(time,temp2);
+  
+  delay(1000);
+   
+  
+
+}
+//********************************************************************************
+void displayOled( String time, float temp){
+    // displays time and temp on Oled
   oled.clearDisplay();
   oled.setTextSize(3);
   //oled.setTextColor(WHITE);
@@ -127,16 +137,14 @@ void loop()
   oled.print(time);
   oled.setTextColor(WHITE);
   oled.setCursor(10,40);
-  oled.print(temp2,1);
+  oled.print(temp,1);
   oled.println(" c");
   oled.display();
-  
-  delay(1000);
-   
-  
-
 }
-//********************************************************************************
+
+
+//************************************************************************************
+  
 // get time from DS1307 and return as string
 String getTime(){
   
